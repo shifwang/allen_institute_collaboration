@@ -10,7 +10,7 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
         else:
             self.n_outer_loops_ = 1
         if 'save_space' in kargs:
-            self.save_space = True
+            self.save_space = kargs['save_space']
             del kargs['save_space'] 
         else:
             self.save_space = False
@@ -32,6 +32,7 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
         W : array, shape (n_samples, n_components)
             Transformed data.
         """
+        start_time = time.time()
         X_guess = np.maximum(X, 0)
         for iter in range(self.n_outer_loops_):
             # if the initialization is given, set self.init to custom
@@ -40,8 +41,9 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             W = super(nmf_with_missing_values, self).fit_transform(X_guess, y, W, H)
             H = self.components_
             # update X_guess
-
             X_guess[X < 0] = (W @ H)[X < 0]
+        end_time = time.time()
+        self.time = end_time - start_time
         if not self.save_space:
             self.X_guess = X_guess
         else:
