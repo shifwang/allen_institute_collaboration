@@ -25,6 +25,13 @@ In shell, run the command
 wget http://celltypes.brain-map.org/api/v2/well_known_file_download/694413985 -O data/mouse_data.zip
 unzip data/mouse_data.zip -d data
 ```
+
+If you have the permission, you could also download the npz file from amazon s3:
+
+```
+s3 cp s3://yu-core-group/allen_institute/mouse_brain_ISH_float32.npz data/
+```
+
 ## adult mouse whole brain in situ hybridization (ISH)
 
 documentation of this data set is [here](http://help.brain-map.org/display/mousebrain/Documentation)
