@@ -29,6 +29,9 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
         """
         X_guess = np.maximum(X, 0)
         for iter in range(self.n_outer_loops_):
+            # if the initialization is given, set self.init to custom
+            if W is not None and H is not None:
+                nmf_with_missing_values.init = 'custom'
             W = super(nmf_with_missing_values, self).fit_transform(X_guess, y, W, H)
             H = self.components_
             # update X_guess
