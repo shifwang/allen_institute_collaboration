@@ -1,7 +1,7 @@
 import numpy as np
 import sklearn 
 import sklearn.decomposition
-
+import time
 class nmf_with_missing_values(sklearn.decomposition.NMF):
     def __init__(self, **kargs):
         if 'n_outer_loops' in kargs:
@@ -9,6 +9,11 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             del kargs['n_outer_loops']
         else:
             self.n_outer_loops_ = 1
+        if 'save_space' in kargs:
+            self.save_space = True
+            del kargs['save_space'] 
+        else:
+            self.save_space = False
         super(nmf_with_missing_values, self).__init__(**kargs)
     def fit_transform(self, X, y = None, W = None, H = None):
         """Learn a NMF model for the data X and returns the transformed data.
@@ -37,5 +42,8 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             # update X_guess
 
             X_guess[X < 0] = (W @ H)[X < 0]
-        self.X_guess = X_guess
+        if not self.save_space:
+            self.X_guess = X_guess
+        else:
+            self.X_guess = None
         return W
