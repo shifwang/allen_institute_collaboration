@@ -14,6 +14,7 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             del kargs['save_space'] 
         else:
             self.save_space = False
+        self.time = None # float, default None, store time that takes to run fit_transform
         super(nmf_with_missing_values, self).__init__(**kargs)
     def fit_transform(self, X, y = None, W = None, H = None):
         """Learn a NMF model for the data X and returns the transformed data.
