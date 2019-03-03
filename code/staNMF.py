@@ -12,32 +12,34 @@ class instability:
         self.folder_name = folder_name
         self.random_state = random_state
         self.n_trials = n_trials
-    def fit_transform(self, Ks, parallel = True):
-        if parallel:
-            self.fit_parallel(Ks)
-        else:
-            self.fit(Ks)
+    def fit_transform(self, Ks, parallel = True, processes = 4):
+        self.fit(Ks, parallel = parallel, processes = processes)
         return self.transform(Ks)
-    def fit_parallel(self, Ks, processes = 10):
-        p = Pool(processes = processes)
-        p.map(self.fit, Ks)
-    def fit(self, Ks):
+    def fit_single_trial(self, k, seed):
+        nmf = nmf_with_missing_values(n_outer_loops = 4, 
+                                      save_space = True,
+                                      n_components = k, 
+                                      init = 'random', 
+                                      random_state = seed)
+        nmf.fit(self.X)
+        filename = self.folder_name + '/k=' + str(k) + '/nmf_' + str(seed) + '.pickle'
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        with open(filename, 'wb') as f:
+            pickle.dump(nmf, f)
+        
+    def fit(self, Ks, parallel = True, processes = 4):
         if isinstance(Ks, int):
             Ks = [Ks]
         for k in Ks:
-            for i in range(self.n_trials):
-                seed = self.random_state + i + 10000 * k
-                nmf = nmf_with_missing_values(n_outer_loops = 4, 
-                                              save_space = True,
-                                              n_components = k, 
-                                              init = 'random', 
-                                              random_state = seed)
-                nmf.fit(self.X)
-                filename = self.folder_name + '/k=' + str(k) + '/nmf_' + str(seed) + '.pickle'
-                if not os.path.exists(os.path.dirname(filename)):
-                    os.makedirs(os.path.dirname(filename))
-                with open(filename, 'wb') as f:
-                    pickle.dump(nmf, f)
+            if parallel:
+                args = [(k, self.random_state + i + 10000 * k) for i in range(self.n_trials)]
+                p = Pool(processes = processes)
+                p.starmap(self.fit_single_trial, args)
+            else:
+                for i in range(self.n_trials):
+                    seed = self.random_state + i + 10000 * k
+                    self.fit_single_trial(k, seed)
     def amariMaxError_(self, correlation):
         '''
         Computes what Wu et al. (2016) described as a 'amari-type error'
