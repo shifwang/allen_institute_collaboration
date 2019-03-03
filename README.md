@@ -29,7 +29,7 @@ unzip data/mouse_data.zip -d data
 If you have the permission, you could also download the npz file from amazon s3:
 
 ```
-s3 cp s3://yu-core-group/allen_institute/mouse_brain_ISH_float32.npz data/
+aws s3 cp s3://yu-core-group/allen_institute/mouse_brain_ISH_float32.npz data/
 ```
 
 ## adult mouse whole brain in situ hybridization (ISH)
