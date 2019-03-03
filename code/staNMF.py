@@ -3,6 +3,7 @@ import sklearn.preprocessing
 import time
 import pickle
 import os, sys
+from multiprocessing import Pool
 from nmf_with_missing_values import nmf_with_missing_values
 
 class instability:
@@ -11,10 +12,18 @@ class instability:
         self.folder_name = folder_name
         self.random_state = random_state
         self.n_trials = n_trials
-    def fit_transform(self, Ks):
-        self.fit(Ks)
+    def fit_transform(self, Ks, parallel = True):
+        if parallel:
+            self.fit_parallel(Ks)
+        else:
+            self.fit(Ks)
         return self.transform(Ks)
+    def fit_parallel(self, Ks, processes = 10):
+        p = Pool(processes = processes)
+        p.map(self.fit, Ks)
     def fit(self, Ks):
+        if isinstance(Ks, int):
+            Ks = [Ks]
         for k in Ks:
             for i in range(self.n_trials):
                 seed = self.random_state + i + 10000 * k
