@@ -23,10 +23,12 @@ class instability:
                                       random_state = seed)
         if self.X is None:
             try:
-                self.X = np.load('X_for_parallel.npz')['X']
+                X = np.load('X_for_parallel.npz')['X']
+                nmf.fit(X)
             except:
                 raise ValueError('self.X is None and cannot find it in disk.')
-        nmf.fit(self.X)
+        else:
+            nmf.fit(self.X)
         filename = self.folder_name + '/k=' + str(k) + '/nmf_' + str(seed) + '.pickle'
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
@@ -36,13 +38,14 @@ class instability:
     def fit(self, Ks, parallel = True, processes = 4):
         if isinstance(Ks, int):
             Ks = [Ks]
+        # store X as a file
+        if parallel:
+            np.savez('X_for_parallel.npz', X = self.X)
+            self.X = None
         for k in Ks:
             if parallel:
                 args = [(k, self.random_state + i + 10000 * k) for i in range(self.n_trials)]
                 p = Pool(processes = processes)
-                # store X as a file
-                np.savez('X_for_parallel.npz', X = self.X)
-                self.X = None
                 p.starmap(self.fit_single_trial, args)
             else:
                 for i in range(self.n_trials):
