@@ -25,7 +25,8 @@ class instability:
             try:
                 X = np.load('X_for_parallel.npz')['X']
                 nmf.fit(X)
-            except:
+            except Exception as e:
+                print(e)
                 raise ValueError('self.X is None and cannot find it in disk.')
         else:
             nmf.fit(self.X)

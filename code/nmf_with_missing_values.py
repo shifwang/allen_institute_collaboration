@@ -34,19 +34,19 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             Transformed data.
         """
         start_time = time.time()
-        X_guess = np.maximum(X, 0)
+        X = np.maximum(X, 0)
         for iter in range(self.n_outer_loops_):
             # if the initialization is given, set self.init to custom
             if W is not None and H is not None:
                 nmf_with_missing_values.init = 'custom'
-            W = super(nmf_with_missing_values, self).fit_transform(X_guess, y, W, H)
+            W = super(nmf_with_missing_values, self).fit_transform(X, y, W, H)
             H = self.components_
             # update X_guess
-            X_guess[X < 0] = (W @ H)[X < 0]
+            X[X < 0] = (W @ H)[X < 0]
         end_time = time.time()
         self.time = end_time - start_time
         if not self.save_space:
-            self.X_guess = X_guess
+            self.X_guess = X
         else:
             self.X_guess = None
         return W
