@@ -1,4 +1,7 @@
 import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn import metrics
+from sklearn.model_selection import train_test_split, cross_val_score
 import sklearn.preprocessing
 import time
 import pickle
@@ -99,7 +102,49 @@ class instability:
         A_std = sklearn.preprocessing.scale(A)
         B_std = sklearn.preprocessing.scale(B)
         return A_std.T @ B_std / A.shape[0]
+    def transform_cv(self, Ks, nfolds = 20, num_samples = 200):
+        cross_val_mean, cross_val_SE = [], []
+        for k in Ks:
+            folder = self.folder_name + '/k=' + str(k)
+            if not os.path.exists(folder):
+                raise ValueError('folder %s not found, have you run fit first?'%folder)
+            Dhat = []
+            for filename in os.listdir(folder):
+                with open(os.path.join(folder, filename), 'rb') as f:
+                    nmf = pickle.load(f)
+                Dhat.append(nmf.components_.T)
+            num = len(Dhat)
+            if num == 0:
+                raise ValueError('folder %s is empty, have you run fit first?'%folder)
+            if self.X is None:
+                try:
+                    self.X = np.load('X_for_parallel.npz')['X']
+                except Exception as e:
+                    print(e)
+                    raise ValueError('self.X is None and cannot find it in disk.')
+            print("Calculating prediction instability for " + str(k))
+            scores = np.zeros(shape=(num, ))
+            total_sample = self.X.shape[0]
+            if num_samples > total_sample:
+                num_samples = total_sample
+                print('num_samples larger than total_sample, force it to be smaller.')
+                
 
+            for i in range(num):
+                x = Dhat[i]
+                lm = LinearRegression(copy_X = False, fit_intercept = False)
+                targets = np.random.choice(list(range(total_sample)), num_samples, replace=False)
+                #print(cross_val_score(lm, x, data[:,targets], cv=cv, scoring = 'explained_variance'))
+                for j in targets:
+                    scores[i] += - np.mean(cross_val_score(lm, x, self.X[j,:], cv=nfolds, scoring = 'neg_mean_squared_error'))
+                scores[i] /= num_samples
+
+            cross_val_mean.append(np.mean(scores))
+            # The standard error
+            cross_val_SE.append(np.std(scores) / len(scores) ** .5)
+
+        output = np.array([cross_val_mean, cross_val_SE]).T
+        return output
     def transform(self, Ks):
         ins_mean, ins_SE = [], []
         for k in Ks:
