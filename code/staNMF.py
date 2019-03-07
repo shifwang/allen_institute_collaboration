@@ -104,6 +104,8 @@ class instability:
         return A_std.T @ B_std / A.shape[0]
     def transform_cv(self, Ks, nfolds = 20, num_samples = 200):
         cross_val_mean, cross_val_SE = [], []
+        # define score
+        neg_MSE_with_missing_values = metrics.make_scorer(lambda y, y_pred: np.mean(((y - y_pred)[y_pred >= 0])**2) / np.mean(y[y_pred >=0]**2), greater_is_better = False)
         for k in Ks:
             folder = self.folder_name + '/k=' + str(k)
             if not os.path.exists(folder):
@@ -128,15 +130,13 @@ class instability:
             if num_samples > total_sample:
                 num_samples = total_sample
                 print('num_samples larger than total_sample, force it to be smaller.')
-                
-
             for i in range(num):
                 x = Dhat[i]
                 lm = LinearRegression(copy_X = False, fit_intercept = False)
                 targets = np.random.choice(list(range(total_sample)), num_samples, replace=False)
                 #print(cross_val_score(lm, x, data[:,targets], cv=cv, scoring = 'explained_variance'))
                 for j in targets:
-                    scores[i] += - np.mean(cross_val_score(lm, x, self.X[j,:], cv=nfolds, scoring = 'neg_mean_squared_error'))
+                    scores[i] += - np.mean(cross_val_score(lm, x, self.X[j,:], cv=nfolds, scoring = neg_MSE_with_missing_values))
                 scores[i] /= num_samples
 
             cross_val_mean.append(np.mean(scores))
@@ -170,11 +170,4 @@ class instability:
             ins_mean.append(np.sum(distMat) / (num *(num-1)))
             ins_SE.append((np.sum(distMat**2) / (num*(num - 1)) - ins_mean[-1]**2)**.5 * (2 / distMat.shape[0])**.5)
         output = np.array([ins_mean, ins_SE]).T
-        return output
-                        
-
-                
-        
-                    
-            
-            
+        return output 
