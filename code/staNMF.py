@@ -102,10 +102,19 @@ class instability:
         A_std = sklearn.preprocessing.scale(A)
         B_std = sklearn.preprocessing.scale(B)
         return A_std.T @ B_std / A.shape[0]
-    def transform_cv(self, Ks, nfolds = 20, num_samples = 200):
+    def transform_cv(self, Ks, nfolds = 2, num_samples = 200, error_type = 'MSE_excluding_missing_values', use_training_error = False):
         cross_val_mean, cross_val_SE = [], []
         # define score
-        neg_MSE_with_missing_values = metrics.make_scorer(lambda y, y_pred: np.mean(((y - y_pred)[y_pred >= 0])**2) / np.mean(y[y_pred >=0]**2), greater_is_better = False)
+        if error_type == 'MSE_excluding_missing_values':
+            scoring = metrics.make_scorer(lambda y, y_pred: np.mean(((y - y_pred)[y >= 0])**2) if max(y) >= 0 else np.mean(y**2), greater_is_better = False)
+        elif error_type == 'RMSE_excluding_missing_values':
+            scoring = metrics.make_scorer(lambda y, y_pred: np.mean(((y - y_pred)[y >= 0])**2) / np.mean(y[y >=0]**2) if max(y) >= 0 else 0, greater_is_better = False)
+        elif error_type == 'MSE':
+            scoring = 'neg_mean_squared_error'
+        elif error_type == 'RMSE':
+            scoring = 'explained_variance'
+        else:
+            raise ValueError('error_type is not found.')
         for k in Ks:
             folder = self.folder_name + '/k=' + str(k)
             if not os.path.exists(folder):
@@ -136,7 +145,11 @@ class instability:
                 targets = np.random.choice(list(range(total_sample)), num_samples, replace=False)
                 #print(cross_val_score(lm, x, data[:,targets], cv=cv, scoring = 'explained_variance'))
                 for j in targets:
-                    scores[i] += - np.mean(cross_val_score(lm, x, self.X[j,:], cv=nfolds, scoring = neg_MSE_with_missing_values))
+                    if not use_training_error:
+                        scores[i] += - np.mean(cross_val_score(lm, x, self.X[j,:], cv=nfolds, scoring = scoring))
+                    else:
+                        lm.fit(x, self.X[j,:])
+                        scores[i] += - scoring(y_true = self.X[j,:], estimator = lm, X = x)
                 scores[i] /= num_samples
 
             cross_val_mean.append(np.mean(scores))
