@@ -1,4 +1,7 @@
 # data file
+**/*df
+**/*.nrrd
+**/*.npy
 allen/
 **/*.npz
 # Byte-compiled / optimized / DLL files
