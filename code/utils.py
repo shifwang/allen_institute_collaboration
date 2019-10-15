@@ -1,6 +1,40 @@
 import numpy as np
 import scipy as sp
+import pandas as pd
+from scipy.optimize import linear_sum_assignment
+import matplotlib.pyplot as plt
 
+def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1):
+    ''' Compare PPs with the standard ABA CCF.
+    '''
+    # transform PPs to 4d tensor
+    PPs_3d = np.zeros([PPs.shape[0]] + original_shape[1:].tolist())
+    for i in range(PPs.shape[0]):
+        p2 = np.reshape(PPs[i,:], original_shape[1:])
+        PPs_3d[i,:,:,:] = p2
+    # load ABA CCF coarse
+    areas_atlas = np.load('mouse_coarse_structure_atlas.npy')
+    mouse_coarse_df = pd.read_pickle('mouse_coarse_df')
+    cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1), PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
+    
+    if order_type == 1:
+        rows, cols = linear_sum_assignment(-np.abs(cor_mat))
+        factor_order = list(cols) + [x for x in range(18) if x not in cols]
+    elif order_type == 2:
+        cols = np.argmax(np.abs(cor_mat), 0)
+        factor_order = np.argsort(cols.tolist())
+    if plot:
+        plt.imshow(np.abs(cor_mat[:,factor_order]).tolist())
+        plt.yticks(np.arange(12),(mouse_coarse_df.iloc[:]['name'].tolist()))
+        plt.ylim([-0.5, 11.5])
+        plt.gca().invert_yaxis()
+        plt.xticks(range(18),factor_order)
+        plt.title('Correlation Coefficient')
+        plt.xlabel('Principle Patterns')
+        plt.colorbar()
+        plt.show()
+    return np.abs(cor_mat[:,factor_order])
+    
 def shrink(PPs, shrink_ratio = 0.1):
     '''
     Shrink the Principle Patterns (PPs) to a smaller area.
