@@ -1,6 +1,6 @@
 import numpy as np
 import sklearn
-from nmf_with_missing_values import nmf_with_missing_values
+from pca_with_missing_values import pca_with_missing_values
 from multiprocessing import Pool
 def f(i):
     tmp = np.load('../data/mouse_brain_ISH_float32.npz', allow_pickle=True)
