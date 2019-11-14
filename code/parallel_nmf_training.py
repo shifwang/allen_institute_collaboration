@@ -3,7 +3,7 @@ import sklearn
 from nmf_with_missing_values import nmf_with_missing_values
 from multiprocessing import Pool
 def f(i):
-    tmp = np.load('../data/mouse_brain_ISH_float32.npz')
+    tmp = np.load('../data/mouse_brain_ISH_float32.npz', allow_pickle=True)
     data = tmp['data']
     sections = tmp['sections']
     original_shape = data.shape
