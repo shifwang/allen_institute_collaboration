@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 import matplotlib.pyplot as plt
 
-def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1):
+def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, area_order=None, put_last_k = 0):
     ''' Compare PPs with the standard ABA CCF.
     '''
     # transform PPs to 4d tensor
@@ -15,20 +15,34 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1):
     # load ABA CCF coarse
     areas_atlas = np.load('mouse_coarse_structure_atlas.npy')
     mouse_coarse_df = pd.read_pickle('mouse_coarse_df')
-    cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1), PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
+    if area_order != None:
+        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1)[np.array(area_order)], PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
+    else:
+        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1), PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
     
     if order_type == 1:
         rows, cols = linear_sum_assignment(-np.abs(cor_mat))
         factor_order = list(cols) + [x for x in range(18) if x not in cols]
     elif order_type == 2:
         cols = np.argmax(np.abs(cor_mat), 0)
-        factor_order = np.argsort(cols.tolist())
+        if put_last_k > 0:
+            # put the poorly fitted patterns at the last.
+            best_fits = [abs(cor_mat[y, x]) for x, y in enumerate(cols)]
+            orders = np.argsort(best_fits)
+            for i in range(put_last_k):
+                cols[orders[i]] = max(cols) 
+        factor_order = np.argsort([ 10 * x - abs(cor_mat[x, i]) for i, x in enumerate(cols.tolist())]) # first sort by x, then sort by the value
+                
+            
     if plot:
         plt.imshow(np.abs(cor_mat[:,factor_order]).tolist())
-        plt.yticks(np.arange(12),(mouse_coarse_df.iloc[:]['name'].tolist()))
+        if area_order is None:
+            plt.yticks(np.arange(12),(mouse_coarse_df.iloc[:]['name'].tolist()))
+        else:
+            plt.yticks(np.arange(12),(mouse_coarse_df.iloc[area_order]['name'].tolist()))
         plt.ylim([-0.5, 11.5])
         plt.gca().invert_yaxis()
-        plt.xticks(range(18),factor_order)
+        plt.xticks(range(18), factor_order)
         plt.title('Correlation Coefficient')
         plt.xlabel('Principle Patterns')
         plt.colorbar()
