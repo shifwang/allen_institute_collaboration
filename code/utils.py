@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 import matplotlib.pyplot as plt
 
-def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, area_order=None, put_last_k = 0):
+def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, area_order=None, put_last_k = 0, save_fig = False, save_index = None):
     ''' Compare PPs with the standard ABA CCF.
     '''
     # transform PPs to 4d tensor
@@ -35,6 +35,7 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, are
                 
             
     if plot:
+        fig = plt.gcf()
         plt.imshow(np.abs(cor_mat[:,factor_order]).tolist())
         if area_order is None:
             plt.yticks(np.arange(12),(mouse_coarse_df.iloc[:]['name'].tolist()))
@@ -47,6 +48,8 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, are
         plt.xlabel('Principle Patterns')
         plt.colorbar()
         plt.show()
+        if save_fig:
+            fig.savefig('plot_{}.png'.format(save_index))
     return np.abs(cor_mat[:,factor_order])
     
 def shrink(PPs, shrink_ratio = 0.1):
