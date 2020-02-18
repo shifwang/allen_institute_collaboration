@@ -1,4 +1,5 @@
 # data file
+*.gif
 **/*df
 **/*.nrrd
 **/*.npy
