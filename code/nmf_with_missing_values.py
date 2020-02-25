@@ -16,7 +16,7 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             self.save_space = False
         self.time = None # float, default None, store time that takes to run fit_transform
         super(nmf_with_missing_values, self).__init__(**kargs)
-    def fit_transform(self, X, y = None, W = None, H = None):
+    def fit_transform(self, X, y = None, W = None, H = None, missing_mask=None):
         """Learn a NMF model for the data X and returns the transformed data.
         This is more efficient than calling fit followed by transform.
         Parameters
@@ -34,6 +34,11 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             Transformed data.
         """
         start_time = time.time()
+        if missing_mask is None:
+            missing_mask = X < 0
+        else:
+            assert missing_mask.shape == X.shape, 'missng_mask should have the same shape as X'
+            
         X = np.maximum(X, 0)
         for iter in range(self.n_outer_loops_):
             # if the initialization is given, set self.init to custom
@@ -42,7 +47,7 @@ class nmf_with_missing_values(sklearn.decomposition.NMF):
             W = super(nmf_with_missing_values, self).fit_transform(X, y, W, H)
             H = self.components_
             # update X_guess
-            X[X < 0] = (W @ H)[X < 0]
+            X[missing_mask] = (W @ H)[missing_mask]
         end_time = time.time()
         self.time = end_time - start_time
         if not self.save_space:
