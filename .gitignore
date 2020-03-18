@@ -1,4 +1,8 @@
 # data file
+*.zip
+*.csv
+*.joblib
+*.png
 *.gif
 **/*df
 **/*.nrrd
