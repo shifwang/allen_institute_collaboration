@@ -9,6 +9,7 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, are
     '''
     # transform PPs to 4d tensor
     PPs_3d = np.zeros([PPs.shape[0]] + original_shape[1:].tolist())
+    num_pps = PPs.shape[0]
     for i in range(PPs.shape[0]):
         p2 = np.reshape(PPs[i,:], original_shape[1:])
         PPs_3d[i,:,:,:] = p2
@@ -16,13 +17,13 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, are
     areas_atlas = np.load('mouse_coarse_structure_atlas.npy')
     mouse_coarse_df = pd.read_pickle('mouse_coarse_df')
     if area_order != None:
-        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1)[np.array(area_order)], PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
+        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1)[np.array(area_order)], PPs_3d[:, :-1,:-1,:-1].reshape(num_pps,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
     else:
-        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1), PPs_3d[:, :-1,:-1,:-1].reshape(18,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
+        cor_mat = np.corrcoef(np.vstack([areas_atlas.reshape(12, -1), PPs_3d[:, :-1,:-1,:-1].reshape(num_pps,-1)]))[:areas_atlas.shape[0], areas_atlas.shape[0]:]
     
     if order_type == 1:
         rows, cols = linear_sum_assignment(-np.abs(cor_mat))
-        factor_order = list(cols) + [x for x in range(18) if x not in cols]
+        factor_order = list(cols) + [x for x in range(num_pps) if x not in cols]
     elif order_type == 2:
         cols = np.argmax(np.abs(cor_mat), 0)
         if put_last_k > 0:
@@ -43,7 +44,7 @@ def correlation_map_with_CCF(PPs, original_shape, plot=True, order_type = 1, are
             plt.yticks(np.arange(12),(mouse_coarse_df.iloc[area_order]['name'].tolist()))
         plt.ylim([-0.5, 11.5])
         plt.gca().invert_yaxis()
-        plt.xticks(range(18), factor_order)
+        plt.xticks(range(num_pps), factor_order)
         plt.title('Correlation Coefficient')
         plt.xlabel('Principle Patterns')
         plt.colorbar()
